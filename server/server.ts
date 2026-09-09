@@ -4,6 +4,7 @@ import cors from "cors";
 import connectDB from "./config/db.js";
 import authRouter from "./routes/authRoutes.js";
 import restaurantRouter from "./routes/restaurantsRoutes.js";
+import bookingRouter from "./routes/bookingRoutes.js";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.get('/', (req: Request, res: Response) => {
 
 app.use("/api/auth", authRouter)
 app.use("/api/restaurants", restaurantRouter)
+app.use("/api/bookings", bookingRouter)
 //global error handler
 app.use((err:Error, req: Request, res: Response,next:NextFunction)=>{
     console.error("Unhandle Error:", err);
