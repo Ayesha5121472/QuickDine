@@ -120,12 +120,12 @@ export const createOwnerRestaurant = async (
     // Setup parsed tags and slots
     const parsedTags =
       typeof tags === "string"
-        ? tags.split(",").map((t) => t.trim())
+        ? tags.split(",").map((t: string) => t.trim())
         : tags || [];
 
     const parsedSlots =
       typeof availableSlots === "string"
-        ? availableSlots.split(",").map((s) => s.trim())
+        ? availableSlots.split(",").map((s: string) => s.trim())
         : availableSlots || [
             "17:00",
             "18:00",
@@ -194,19 +194,22 @@ export const updateOwnerRestaurant = async (
     if (location) restaurant.location = location;
     if (address) restaurant.address = address;
     if (chef) restaurant.chef = chef;
-    if (totalSeats) restaurant.totalSeats = totalSeats;
+
+    if (totalSeats) {
+      restaurant.totalSeats = Number(totalSeats);
+    }
 
     if (tags) {
       restaurant.tags =
         typeof tags === "string"
-          ? tags.split(",").map((t) => t.trim())
+          ? tags.split(",").map((t: string) => t.trim())
           : tags;
     }
 
     if (availableSlots) {
-      restaurant.availableSLots =
+      restaurant.availableSlots =
         typeof availableSlots === "string"
-          ? availableSlots.split(",").map((s) => s.trim())
+          ? availableSlots.split(",").map((s: string) => s.trim())
           : availableSlots;
     }
 
@@ -285,7 +288,7 @@ export const updateBookingStatus = async (
 
     if (
       !restaurant ||
-      restaurant.owner.toString() !== req.user?._id.toString()
+      restaurant.owner.toString() !== req.user?._id?.toString()
     ) {
       res
         .status(401)
