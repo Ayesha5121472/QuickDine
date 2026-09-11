@@ -13,6 +13,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "brcypt": "^1.0.1",
     "cloudinary": "^2.11.0",
     "cors": "^2.8.6",

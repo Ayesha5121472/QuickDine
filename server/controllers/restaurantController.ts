@@ -4,8 +4,8 @@ import jwt from "jsonwebtoken";
 import { User } from "../models/User.js";
 import { Booking } from "../models/Booking.js";
 
-// get all restaurants with search and filters
-// GET /api/restaraunts
+// Get all restaurants with search and filters
+// GET /api/restaurants
 export const getRestaurants = async (
   req: Request,
   res: Response
@@ -13,25 +13,31 @@ export const getRestaurants = async (
   try {
     const { search, priceRange, rating, location, sort } = req.query;
 
-    // build query object
-    const queryObj: any = { status: "approved" };
+    const queryObj: any = {
+      status: "approved",
+    };
 
     if (search) {
       queryObj.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { tags: { $regex: search, $options: "i" } },
-        { location: { $regex: search, $options: "i" } },
+        { name: { $regex: search as string, $options: "i" } },
+        { tags: { $regex: search as string, $options: "i" } },
+        { location: { $regex: search as string, $options: "i" } },
       ];
     }
 
     if (priceRange) {
-      const prices = Array.isArray(priceRange) ? priceRange : [priceRange];
-      queryObj.price = { $in: prices };
+      const prices = Array.isArray(priceRange)
+        ? priceRange
+        : [priceRange];
+
+      queryObj.priceRange = {
+        $in: prices,
+      };
     }
 
     if (rating) {
       queryObj.rating = {
-        $gte: parseFloat(rating as string),
+        $gte: Number(rating),
       };
     }
 
@@ -42,8 +48,9 @@ export const getRestaurants = async (
       };
     }
 
-    // sorting
-    let sortOption: any = { createdAt: -1 };
+    let sortOption: any = {
+      createdAt: -1,
+    };
 
     if (sort === "rating") {
       sortOption = { rating: -1 };
@@ -53,17 +60,20 @@ export const getRestaurants = async (
       sortOption = { priceRange: -1 };
     }
 
-    const restaurant = await Restaurant.find(queryObj).sort(sortOption);
+    const restaurants = await Restaurant.find(queryObj).sort(sortOption);
 
-    res.json(restaurant);
+    res.status(200).json(restaurants);
   } catch (error: any) {
-    console.error(error);
-    res.status(400).json({ message: error.message });
+    console.error("Get Restaurants Error:", error);
+
+    res.status(500).json({
+      message: error.message || "Server Error",
+    });
   }
 };
 
-// get featured and exclusive restaurants
-// GET /api/restaraunts/featured
+// Get featured and exclusive restaurants
+// GET /api/restaurants/featured
 export const getFeaturedRestaurants = async (
   req: Request,
   res: Response
@@ -71,18 +81,24 @@ export const getFeaturedRestaurants = async (
   try {
     const featured = await Restaurant.find({
       status: "approved",
-      $or: [{ isFeatured: true }, { isExclusive: true }],
+      $or: [
+        { featured: true },
+        { exclusive: true },
+      ],
     }).limit(6);
 
-    res.json(featured);
-  } catch (error) {
+    res.status(200).json(featured);
+  } catch (error: any) {
     console.error("Get Featured Error:", error);
-    res.status(500).json({ message: "Server Error" });
+
+    res.status(500).json({
+      message: "Server Error",
+    });
   }
 };
 
-// get single restaurant by slug
-// GET /api/restaraunts/:slug
+// Get single restaurant by slug
+// GET /api/restaurants/:slug
 export const getRestaurantsBySlug = async (
   req: Request,
   res: Response
@@ -93,20 +109,21 @@ export const getRestaurantsBySlug = async (
     });
 
     if (!restaurant) {
-      res.status(404).json({ message: "Restaurant not found" });
+      res.status(404).json({
+        message: "Restaurant not found",
+      });
       return;
     }
 
-    // if not approved verify authorization (owner or admin)
+    // If not approved, verify authorization
     if (restaurant.status !== "approved") {
       let isAuthorized = false;
 
-      if (
-        req.headers.authorization &&
-        req.headers.authorization.startsWith("Bearer")
-      ) {
+      const authHeader = req.headers.authorization;
+
+      if (authHeader && authHeader.startsWith("Bearer ")) {
         try {
-          const token = req.headers.authorization.split(" ")[1];
+          const token = authHeader.split(" ")[1];
 
           const decoded = jwt.verify(
             token,
@@ -117,14 +134,14 @@ export const getRestaurantsBySlug = async (
 
           if (
             user &&
-            (user.role == "admin" ||
-              (user.role == "owner" &&
+            (user.role === "admin" ||
+              (user.role === "owner" &&
                 restaurant.owner.toString() === user._id.toString()))
           ) {
             isAuthorized = true;
           }
-        } catch (err) {
-          // Ignore token verify error
+        } catch (error) {
+          isAuthorized = false;
         }
       }
 
@@ -136,15 +153,18 @@ export const getRestaurantsBySlug = async (
       }
     }
 
-    res.json(restaurant);
+    res.status(200).json(restaurant);
   } catch (error: any) {
-    console.error(error);
-    res.status(400).json({ message: error.message });
+    console.error("Get Restaurant By Slug Error:", error);
+
+    res.status(500).json({
+      message: error.message || "Server Error",
+    });
   }
 };
 
-// get restaurant availability for slots
-// GET /api/restaraunts/:id/availability
+// Get restaurant availability
+// GET /api/restaurants/:id/availability
 export const getRestaurantAvailability = async (
   req: Request,
   res: Response
@@ -153,34 +173,49 @@ export const getRestaurantAvailability = async (
     const { date } = req.query;
 
     if (!date) {
-      res.status(400).json({ message: "Please provide a date" });
+      res.status(400).json({
+        message: "Please provide a date",
+      });
       return;
     }
 
     const restaurant = await Restaurant.findById(req.params.id);
 
     if (!restaurant) {
-      res.status(400).json({ message: "Restaurant not found" });
+      res.status(404).json({
+        message: "Restaurant not found",
+      });
       return;
     }
 
     const bookingDate = new Date(date as string);
 
-    // Get all active bookings on this date for the restaurant
+    if (Number.isNaN(bookingDate.getTime())) {
+      res.status(400).json({
+        message: "Invalid date",
+      });
+      return;
+    }
+
     const bookings = await Booking.find({
       restaurant: restaurant._id,
       date: bookingDate,
       status: "confirmed",
     });
 
-    // Map slots to available capacities
-    const availabilty = restaurant.availableSLots.map((slot) => {
+    const availability = restaurant.availableSlots.map((slot) => {
       const bookedSeats = bookings
-        .filter((b) => b.time === slot)
-        .reduce((sum, b) => sum + b.guests, 0);
+        .filter((booking) => booking.time === slot)
+        .reduce(
+          (sum, booking) => sum + Number(booking.guests || 0),
+          0
+        );
 
       const totalSeats = restaurant.totalSeats || 20;
-      const availableSeats = Math.max(0, totalSeats - bookedSeats);
+      const availableSeats = Math.max(
+        0,
+        totalSeats - bookedSeats
+      );
 
       return {
         time: slot,
@@ -189,9 +224,12 @@ export const getRestaurantAvailability = async (
       };
     });
 
-    res.json(availabilty);
+    res.status(200).json(availability);
   } catch (error: any) {
-    console.error(error);
-    res.status(400).json({ message: error.message });
+    console.error("Get Availability Error:", error);
+
+    res.status(500).json({
+      message: error.message || "Server Error",
+    });
   }
 };
