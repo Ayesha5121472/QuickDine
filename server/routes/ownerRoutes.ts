@@ -2,39 +2,43 @@ import { Router } from "express";
 import multer from "multer";
 
 import {
-    createOwnerRestaurant,
-    getOwnerBookings,
-    getOwnerRestaurant,
-    updateBookingStatus,
-    updateOwnerRestaurant
+  createOwnerRestaurant,
+  getOwnerBookings,
+  getOwnerRestaurant,
+  updateBookingStatus,
+  updateOwnerRestaurant,
 } from "../controllers/ownerController.js";
 
-import { ownwerOnly, protect } from "../middlewares/auth.js";
+import { ownerOnly, protect } from "../middlewares/auth.js";
 
 const ownerRouter = Router();
 
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+});
 
 ownerRouter.use(protect);
-
-ownerRouter.use(ownwerOnly);
+ownerRouter.use(ownerOnly);
 
 ownerRouter.get("/restaurant", getOwnerRestaurant);
 
 ownerRouter.post(
-    "/restaurant",
-    upload.single("image"),
-    createOwnerRestaurant
+  "/restaurant",
+  upload.single("image"),
+  createOwnerRestaurant
 );
 
 ownerRouter.put(
-    "/restaurant",
-    upload.single("image"),
-    updateOwnerRestaurant
+  "/restaurant",
+  upload.single("image"),
+  updateOwnerRestaurant
 );
 
 ownerRouter.get("/bookings", getOwnerBookings);
 
-ownerRouter.put("/bookings/:id/status", updateBookingStatus);
+ownerRouter.put(
+  "/bookings/:id/status",
+  updateBookingStatus
+);
 
 export default ownerRouter;
