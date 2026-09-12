@@ -3,10 +3,10 @@ import { getRestaurants, getFeaturedRestaurants, getRestaurantsBySlug, getRestau
 
 const restaurantRouter = Router();
 
-restaurantRouter.get('/', getRestaurants);
-restaurantRouter.get('/', getFeaturedRestaurants);
-restaurantRouter.get('/:slug', getRestaurantsBySlug);
-restaurantRouter.get('/:id/availibilty', getRestaurantAvailability);
+restaurantRouter.get("/", getRestaurants);
+restaurantRouter.get("/featured", getFeaturedRestaurants);
+restaurantRouter.get("/:id/availability", getRestaurantAvailability);
+restaurantRouter.get("/:slug", getRestaurantsBySlug);
 
 export default restaurantRouter;
 

@@ -92,7 +92,7 @@ export default function AdminApprovals({ pendingRestaurants, otherRestaurants, b
                                 {otherRestaurants.map((r) => (
                                     <tr key={r._id} className="hover:bg-surface/50">
                                         <td className="p-4 font-medium text-primary">
-                                            <Link to={`/restaurant/${r.slug}`} className="hover:text-secondary">
+                                            <Link to={`/restaurant/${r.slug || r._id}`} className="hover:text-secondary">
                                                 {r.name}
                                             </Link>
                                         </td>

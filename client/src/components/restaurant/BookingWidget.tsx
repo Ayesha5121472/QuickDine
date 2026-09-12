@@ -63,7 +63,10 @@ export default function BookingWidget({
                             type="date"
                             value={selectedDate}
                             onChange={(e) => setSelectedDate(e.target.value)}
-                            min={new Date().toISOString().split("T")[0]}
+                            min={(() => {
+                                const now = new Date();
+                                return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+                            })()}
                             className="w-full bg-surface-container-low/30 pl-9 pr-3 py-2.5 text-xs border border-outline-variant/40 focus:border-secondary focus:outline-none rounded-md cursor-pointer"
                         />
                     </div>
@@ -79,7 +82,8 @@ export default function BookingWidget({
                             </div>
                         ) : (
                             (() => {
-                                const todayStr = new Date().toISOString().split("T")[0];
+                                const now = new Date();
+                                const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
                                 const isToday = selectedDate === todayStr;
                                 const allSlots =
                                     slotsAvailability.length > 0

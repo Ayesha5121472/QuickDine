@@ -22,6 +22,7 @@ export default function Search() {
     const locationVal = searchParams.get("location") || "";
     const cuisinesSelected = searchParams.getAll("cuisine");
     const pricesSelected = searchParams.getAll("priceRange");
+    const ratingVal = searchParams.get("rating") || "";
     const sortVal = searchParams.get("sort") || "";
 
     // Temp text inputs for immediate user typing (submit on enter/click)
@@ -38,17 +39,15 @@ export default function Search() {
 
     useEffect(() => {
         const fetchRestaurants = async () => {
-            try{
+            try {
                 setLoading(true);
-                //construct query string directly from searchParams
-                const res= await api.get(`/restaurants?${searchParams.toString()}`)
-                setRestaurants(res.data)
-
-            }catch(error:any){
+                // construct query string directly from searchParams
+                const res = await api.get(`/restaurants?${searchParams.toString()}`);
+                setRestaurants(res.data);
+            } catch (error: any) {
                 toast.error(error?.response?.data?.message || error?.message);
-            }
-            finally{
-                setLoading(false)
+            } finally {
+                setLoading(false);
             }
         };
 
@@ -97,6 +96,16 @@ export default function Search() {
         setSearchParams(nextParams);
     };
 
+    const handleRatingToggle = (rating: string) => {
+        const nextParams = new URLSearchParams(searchParams);
+        if (nextParams.get("rating") === rating) {
+            nextParams.delete("rating");
+        } else {
+            nextParams.set("rating", rating);
+        }
+        setSearchParams(nextParams);
+    };
+
     const handleSortChange = (sort: string) => {
         const nextParams = new URLSearchParams(searchParams);
         if (sort) {
@@ -115,6 +124,11 @@ export default function Search() {
 
     const priceOptions = ["$", "$$", "$$$", "$$$$"];
     const cuisineOptions = ["Italian", "French", "Japanese", "Steakhouse", "Vegetarian"];
+    const ratingOptions = [
+        { label: "4.5 & up", value: "4.5" },
+        { label: "4.0 & up", value: "4.0" },
+        { label: "3.5 & up", value: "3.5" },
+    ];
 
     return (
         <div className="min-h-screen bg-surface flex flex-col pt-20">
@@ -207,7 +221,7 @@ export default function Search() {
 
                         {/* Price Range Filter */}
                         <div className="space-y-3">
-                            <h4 className="text-xs text-primary tracking-wider uppercase">Price Range</h4>
+                            <h4 className="text-xs font-medium text-primary tracking-wider uppercase">Price Range</h4>
                             <div className="grid grid-cols-4 gap-1.5">
                                 {priceOptions.map((p) => {
                                     const active = pricesSelected.includes(p);
@@ -222,6 +236,30 @@ export default function Search() {
                                             }`}
                                         >
                                             {p}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* Rating Filter */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-medium text-primary tracking-wider uppercase">Minimum Rating</h4>
+                            <div className="space-y-1.5">
+                                {ratingOptions.map((r) => {
+                                    const active = ratingVal === r.value;
+                                    return (
+                                        <button
+                                            key={r.value}
+                                            onClick={() => handleRatingToggle(r.value)}
+                                            className={`w-full flex items-center justify-between text-left text-xs transition-colors cursor-pointer py-1.5 px-2 rounded-sm border ${
+                                                active
+                                                    ? "bg-secondary/10 border-secondary text-secondary font-medium"
+                                                    : "border-transparent text-black/65 hover:bg-surface-container-low"
+                                            }`}
+                                        >
+                                            <span>★ {r.label}</span>
+                                            {active && <Check size={12} className="text-secondary" />}
                                         </button>
                                     );
                                 })}
@@ -245,6 +283,7 @@ export default function Search() {
                                 className="text-xs bg-transparent border border-outline-variant/30 px-3 py-1.5 focus:outline-none cursor-pointer rounded-sm"
                             >
                                 <option value="">Default (Newest)</option>
+                                <option value="rating">Rating: High to Low</option>
                                 <option value="price_low">Price: Low to High</option>
                                 <option value="price_high">Price: High to Low</option>
                             </select>
@@ -340,6 +379,30 @@ export default function Search() {
                                                 }`}
                                             >
                                                 {p}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Ratings */}
+                            <div className="py-4 space-y-3 border-t border-outline-variant/10">
+                                <h4 className="text-xs font-medium text-primary tracking-wider uppercase">Minimum Rating</h4>
+                                <div className="space-y-1.5">
+                                    {ratingOptions.map((r) => {
+                                        const active = ratingVal === r.value;
+                                        return (
+                                            <button
+                                                key={r.value}
+                                                onClick={() => handleRatingToggle(r.value)}
+                                                className={`w-full flex items-center justify-between text-left text-xs transition-colors cursor-pointer py-1.5 px-2 rounded-sm border ${
+                                                    active
+                                                        ? "bg-secondary/10 border-secondary text-secondary font-medium"
+                                                        : "border-transparent text-black/65 hover:bg-surface-container-low"
+                                                }`}
+                                            >
+                                                <span>★ {r.label}</span>
+                                                {active && <Check size={12} className="text-secondary" />}
                                             </button>
                                         );
                                     })}

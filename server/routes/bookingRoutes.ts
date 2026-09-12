@@ -4,9 +4,10 @@ import { cancelBooking, createBooking, getMyBooking } from "../controllers/booki
 
 const bookingRouter =Router();
 
-bookingRouter.post("/",protect, createBooking)
-bookingRouter.get("/my",protect, getMyBooking)
-bookingRouter.post(":id/cancel",protect, cancelBooking)
+bookingRouter.post("/", protect, createBooking);
+bookingRouter.get("/my", protect, getMyBooking);
+bookingRouter.put("/:id/cancel", protect, cancelBooking);
+bookingRouter.post("/:id/cancel", protect, cancelBooking);
 
 export default bookingRouter;
 

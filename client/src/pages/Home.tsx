@@ -9,7 +9,6 @@ import TrendingRow from "../components/home/TrendingRow.tsx";
 import MembershipSection from "../components/home/MembershipSection.tsx";
 import NewsletterCTA from "../components/home/NewsletterCTA.tsx";
 import api from "../lib/api.ts";
-import toast from "react-hot-toast";
 
 export default function Home() {
     const [trending, setTrending] = useState<any[]>([]);
@@ -17,16 +16,16 @@ export default function Home() {
 
     useEffect(() => {
         const fetchTrending = async () => {
-           try{
-            const res=await api.get('/restaurants/featured')
-            setTrending(res.data)
-
-           }catch(error:any){
-            toast.error(error?.response?.data?.message || error?.message);
-        }finally{
-            setLoading(false)
-        }
-
+            try {
+                const res = await api.get("/restaurants/featured");
+                setTrending(res.data || []);
+            } catch (error: any) {
+                // Don't block the home page if featured restaurants fail to load
+                console.error("Failed to load trending restaurants:", error?.response?.data?.message || error?.message);
+                setTrending([]);
+            } finally {
+                setLoading(false);
+            }
         };
         fetchTrending();
     }, []);

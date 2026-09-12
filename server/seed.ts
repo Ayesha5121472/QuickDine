@@ -171,18 +171,17 @@ const RestaurantsData = [
     
 ];
 
-console.log("Inserting restraunts...")
-const updatedRestaurantsData=RestaurantsData.map((rest, idx)=>{
-    const {...restInfo}=rest;
-    return{
+console.log("Inserting restaurants...");
+const updatedRestaurantsData = RestaurantsData.map((rest, idx) => {
+    const { ...restInfo } = rest;
+    return {
         ...restInfo,
         owner: ownerUser._id,
-        status:"approved",
-        totalSeats: 20 * idx *5,
-    }
-
-})
-await Restaurant.insertMany(updatedRestaurantsData)
+        status: "approved",
+        totalSeats: 20 + idx * 5,
+    };
+});
+await Restaurant.insertMany(updatedRestaurantsData);
 console.log("Seeding complete! Disconnecting");
 
 await mongoose.disconnect();

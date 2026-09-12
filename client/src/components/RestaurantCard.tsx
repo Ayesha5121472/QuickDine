@@ -22,23 +22,29 @@ interface RestaurantCardProps {
 export default function RestaurantCard({ restaurant }: RestaurantCardProps) {
     const navigate = useNavigate();
 
+    const restaurantTarget = restaurant.slug || restaurant._id;
+
     const handleSlotClick = (e: React.MouseEvent, slot: string) => {
         e.preventDefault();
         e.stopPropagation();
-        const today = new Date().toISOString().split("T")[0];
-        // Redirect to booking details confirmation with slot and today's date pre-selected
-        navigate(`/booking/${restaurant.slug}?slot=${slot}&date=${today}`);
+        // Use local date (not UTC toISOString) to avoid timezone off-by-one
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        navigate(`/booking/${restaurantTarget}?slot=${encodeURIComponent(slot)}&date=${today}&guests=2`);
     };
 
     return (
         <div className="group relative bg-white border border-outline-variant/10 card-hover-effect overflow-hidden rounded-md flex flex-col h-full">
             {/* Image & Badges */}
-            <Link to={`/restaurant/${restaurant.slug}`} className="relative h-60 overflow-hidden block">
+            <Link to={`/restaurant/${restaurantTarget}`} className="relative h-60 overflow-hidden block">
                 <img
-                    src={restaurant.image}
+                    src={restaurant.image || "/default_restaurant_Img.jpeg"}
                     alt={restaurant.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     loading="lazy"
+                    onError={(e) => {
+                        e.currentTarget.src = "/default_restaurant_Img.jpeg";
+                    }}
                 />
                 <div className="absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent"></div>
 
@@ -68,13 +74,13 @@ export default function RestaurantCard({ restaurant }: RestaurantCardProps) {
                             <span className="text-black/55/30 text-xs">•</span>
                             <div className="flex items-center gap-0.5 text-secondary">
                                 <Star size={12} fill="currentColor" />
-                                <span className="text-xs font-medium text-primary">{dummyRating.toFixed(1)}</span>
+                                <span className="text-xs font-medium text-primary">{(restaurant.rating ?? dummyRating).toFixed(1)}</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Restaurant Title */}
-                    <Link to={`/restaurant/${restaurant.slug}`} className="block mb-2">
+                    <Link to={`/restaurant/${restaurantTarget}`} className="block mb-2">
                         <h3 className="font-display text-lg font-semibold text-primary group-hover:text-secondary transition-colors line-clamp-1">
                             {restaurant.name}
                         </h3>
@@ -92,16 +98,17 @@ export default function RestaurantCard({ restaurant }: RestaurantCardProps) {
                     <div className="border-t border-outline-variant/10 my-3"></div>
                     <span className="block text-[9px] font-medium text-black/55 tracking-wider uppercase mb-2">QUICK RESERVATION</span>
                     <div className="flex flex-wrap gap-1.5">
-                        {restaurant.availableSlots
-                            .filter((slot) => {
+                        {(() => {
+                            const validSlots = restaurant.availableSlots || [];
+                            const upcoming = validSlots.filter((slot) => {
                                 const [slotHour, slotMinute] = slot.split(":").map(Number);
                                 const now = new Date();
                                 const currentHour = now.getHours();
                                 const currentMinute = now.getMinutes();
                                 return slotHour > currentHour || (slotHour === currentHour && slotMinute > currentMinute);
-                            })
-                            .slice(0, 3)
-                            .map((slot) => (
+                            });
+                            const displaySlots = upcoming.length > 0 ? upcoming.slice(0, 3) : validSlots.slice(0, 3);
+                            return displaySlots.map((slot) => (
                                 <button
                                     key={slot}
                                     onClick={(e) => handleSlotClick(e, slot)}
@@ -109,9 +116,10 @@ export default function RestaurantCard({ restaurant }: RestaurantCardProps) {
                                 >
                                     {slot}
                                 </button>
-                            ))}
+                            ));
+                        })()}
                         <Link
-                            to={`/restaurant/${restaurant.slug}`}
+                            to={`/restaurant/${restaurantTarget}`}
                             className="text-[10px] font-medium border border-outline-variant/20 px-3 py-1.5 transition-colors cursor-pointer text-secondary hover:bg-secondary hover:text-white"
                         >
                             ALL SLOTS

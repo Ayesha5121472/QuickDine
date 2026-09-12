@@ -25,7 +25,7 @@ export default function Dashboard() {
             const res = await api.get("/bookings/my")
             setBookings(res.data)
            }catch(error:any){
-            toast.error(error?.response?.message || error?.message)
+            toast.error(error?.response?.data?.message || error?.message);
            }finally{
             setLoadingBookings(false);
            }
@@ -44,7 +44,7 @@ export default function Dashboard() {
                 setRecommendations(res.data)
 
             }catch(error:any){
-                toast.error(error?.response?.message || error?.message);
+                console.error("Recommendations load error:", error);
             }
         };
         fetchRecommendations();
@@ -69,17 +69,16 @@ export default function Dashboard() {
     if (!user) return null;
 
     // Filter bookings into upcoming and past
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const todayStr = new Date().toISOString().split("T")[0];
 
     const upcomingBookings = bookings.filter((b) => {
-        const bDate = new Date(b.date);
-        return bDate >= today && b.status === "confirmed";
+        const bDateStr = b.date ? new Date(b.date).toISOString().split("T")[0] : "";
+        return bDateStr >= todayStr && b.status === "confirmed";
     });
 
     const pastBookings = bookings.filter((b) => {
-        const bDate = new Date(b.date);
-        return bDate < today || b.status !== "confirmed";
+        const bDateStr = b.date ? new Date(b.date).toISOString().split("T")[0] : "";
+        return bDateStr < todayStr || b.status !== "confirmed";
     });
 
     return (
@@ -130,9 +129,12 @@ export default function Dashboard() {
                                             <div className="flex gap-4">
                                                 <div className="w-16 h-16 rounded-sm overflow-hidden shrink-0 bg-surface">
                                                     <img
-                                                        src={b.restaurant?.image}
-                                                        alt={b.restaurant?.name}
+                                                        src={b.restaurant?.image || "/default_restaurant_Img.jpeg"}
+                                                        alt={b.restaurant?.name || "Restaurant"}
                                                         className="w-full h-full object-cover"
+                                                        onError={(e) => {
+                                                            e.currentTarget.src = "/default_restaurant_Img.jpeg";
+                                                        }}
                                                     />
                                                 </div>
                                                 <div className="space-y-1">
@@ -152,11 +154,11 @@ export default function Dashboard() {
                                             <div className="flex flex-wrap items-center gap-6 text-xs text-on-surface bg-surface-container-low p-4 rounded-md border border-outline-variant/10 w-full md:w-auto">
                                                 <div className="flex items-center gap-2 pr-4 md:border-r border-outline-variant/20">
                                                     <CalendarIcon size={14} className="text-secondary" />
-                                                    <span className="font-medium">{new Date(b.date).toLocaleDateString()}</span>
+                                                    <span className="font-medium">{new Date(b.date).toLocaleDateString(undefined, { timeZone: "UTC" })}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2 pr-4 md:border-r border-outline-variant/20">
                                                     <ClockIcon size={14} className="text-secondary" />
-                                                    <span className="font-medium">{b.time} PM</span>
+                                                    <span className="font-medium">{b.time}</span>
                                                 </div>
                                                 <div className="flex items-center gap-2">
                                                     <UsersIcon size={14} className="text-secondary" />
@@ -200,14 +202,14 @@ export default function Dashboard() {
                                                           <tr key={b._id} className="hover:bg-surface/50">
                                                               <td className="p-4 font-medium text-primary">
                                                                   <Link
-                                                                      to={`/restaurant/${b.restaurant?.slug}`}
+                                                                      to={`/restaurant/${b.restaurant?.slug || b.restaurant?._id}`}
                                                                       className="hover:text-secondary"
                                                                   >
                                                                       {b.restaurant?.name}
                                                                   </Link>
                                                               </td>
                                                               <td className="p-4">
-                                                                  {new Date(b.date).toLocaleDateString()} at {b.time} PM
+                                                                  {new Date(b.date).toLocaleDateString(undefined, { timeZone: "UTC" })} at {b.time}
                                                               </td>
                                                               <td className="p-4">
                                                                   {b.guests} {b.guests === 1 ? "Guest" : "Guests"}

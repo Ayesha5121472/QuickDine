@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express, { Request, Response ,NextFunction} from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import cors from "cors";
 import connectDB from "./config/db.js";
 import authRouter from "./routes/authRoutes.js";
@@ -10,33 +10,51 @@ import adminRouter from "./routes/adminRoutes.js";
 
 const app = express();
 
-//Connect to MongoDB
-await connectDB();
+// Middleware — must come before routes
+app.use(cors({
+    origin: "*",
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: false,
+}));
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
-// Middleware
-app.use(cors()) 
-app.use(express.json());
+// Connect to MongoDB on every cold start (Vercel serverless safe — connectDB is idempotent)
+app.use(async (_req: Request, _res: Response, next: NextFunction) => {
+    try {
+        await connectDB();
+    } catch (err) {
+        console.error("MongoDB connection failed:", err);
+    }
+    next();
+});
 
 const port = process.env.PORT || 5000;
 
-app.get('/', (req: Request, res: Response) => {
-    res.send('Server is Live!');
+app.get("/", (_req: Request, res: Response) => {
+    res.send("Server is Live!");
 });
 
-app.use("/api/auth", authRouter)
-app.use("/api/restaurants", restaurantRouter)
-app.use("/api/bookings", bookingRouter)
-app.use("/api/owner",ownerRouter)
-app.use("/api/admin",adminRouter)
+app.use("/api/auth", authRouter);
+app.use("/api/restaurants", restaurantRouter);
+app.use("/api/bookings", bookingRouter);
+app.use("/api/owner", ownerRouter);
+app.use("/api/admin", adminRouter);
 
-//global error handler
-app.use((err:Error, req: Request, res: Response,next:NextFunction)=>{
-    console.error("Unhandle Error:", err);
-    res.status(500).json({message: "Internal Server Error",
+// Global error handler
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    console.error("Unhandled Error:", err);
+    res.status(500).json({
+        message: err.message || "Internal Server Error",
         stack: process.env.NODE_ENV === "production" ? undefined : err.stack,
     });
-})
-
-app.listen(port, () => {
-    console.log(`Server is running at http://localhost:${port}`);
 });
+
+if (process.env.VERCEL !== "1") {
+    app.listen(port, () => {
+        console.log(`Server is running at http://localhost:${port}`);
+    });
+}
+
+export default app;
