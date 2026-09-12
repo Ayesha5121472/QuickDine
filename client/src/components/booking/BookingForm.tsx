@@ -63,13 +63,13 @@ export default function BookingForm({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                     {/* Phone */}
                     <div className="space-y-1">
-                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">PHONE NUMBER</label>
+                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">PHONE NUMBER <span className="text-black/30 normal-case tracking-normal">(optional)</span></label>
                         <input
                             type="tel"
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
+                            placeholder="e.g. +1 555 000 0000"
                             className="w-full pb-2 pt-1 text-sm bg-transparent border-b border-outline-variant/60 focus:border-secondary focus:outline-none transition-colors"
-                            required
                         />
                     </div>
 

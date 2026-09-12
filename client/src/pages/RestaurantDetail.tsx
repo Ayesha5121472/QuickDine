@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAppContext } from "../context/AppContext.tsx";
 import Navbar from "../components/Navbar.tsx";
 import Footer from "../components/Footer.tsx";
@@ -20,6 +20,7 @@ export default function RestaurantDetail() {
 
     const [restaurant, setRestaurant] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState<string | null>(null);
 
     // Booking Widget states
     const [selectedDate, setSelectedDate] = useState("");
@@ -32,15 +33,18 @@ export default function RestaurantDetail() {
         const fetchRestaurant = async () => {
            try{
             setLoading(true);
-            const res =await api.get(`/restaurants/${slug}`)
-            setRestaurant(res.data)
-            //initialize booking value
-            const today = new Date().toISOString().split("T")[0];
-            setSelectedDate(today);
-           }catch(error:any){
-            toast.error(error?.response?.data?.message || error?.message);
-            navigate("/");
-           }finally{
+            setFetchError(null);
+            const res = await api.get(`/restaurants/${slug}`);
+            setRestaurant(res.data);
+            // Use local date (not UTC) to avoid timezone issues causing "past date" errors
+            const now = new Date();
+            const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+            setSelectedDate(localToday);
+           } catch(error: any) {
+            const msg = error?.response?.data?.message || error?.message || "Failed to load restaurant";
+            setFetchError(msg);
+            toast.error(msg);
+           } finally {
             setLoading(false);
            }
         };
@@ -48,21 +52,20 @@ export default function RestaurantDetail() {
         if (slug) {
             fetchRestaurant();
         }
-    }, [slug, navigate]);
+    }, [slug]);
 
     useEffect(() => {
         const fetchAvailability = async () => {
-           if(!restaurant._id || !selectedDate) return;
+           if(!restaurant?._id || !selectedDate) return;
            try{
-            setLoading(true);
-            const res = await api.get(`/restaurants/${restaurant._id}/availability?date=
-                {selectedDate}`)
-                setSlotsAvailability(res.data)
+            setLoadingSlots(true);
+            const res = await api.get(`/restaurants/${restaurant._id}/availability?date=${selectedDate}`);
+            setSlotsAvailability(res.data);
            }catch(error:any){
-            console.error(error);
-            }finally{
+            console.error("Availability error:", error);
+           }finally{
                 setLoadingSlots(false);
-            }
+           }
            
         };
         fetchAvailability();
@@ -72,7 +75,40 @@ export default function RestaurantDetail() {
         return <Loader text="Loading Restaurant Details..." />;
     }
 
-    if (!restaurant) return null;
+    // Show a proper error page instead of silently navigating to home
+    if (fetchError || !restaurant) {
+        return (
+            <div className="min-h-screen bg-surface flex flex-col pt-20">
+                <Navbar />
+                <AuthModal />
+                <main className="grow flex flex-col items-center justify-center py-24 px-6 text-center">
+                    <div className="max-w-md space-y-6">
+                        <h2 className="font-display text-3xl font-medium text-primary">Restaurant Not Found</h2>
+                        <p className="text-sm text-black/55 leading-relaxed">
+                            {fetchError && fetchError !== "Restaurant not found"
+                                ? fetchError
+                                : "This restaurant could not be found. It may have been removed or is pending approval."}
+                        </p>
+                        <div className="flex gap-4 justify-center">
+                            <Link
+                                to="/search"
+                                className="bg-primary hover:bg-secondary text-white text-xs font-medium tracking-widest uppercase px-6 py-3 transition-colors"
+                            >
+                                Browse Restaurants
+                            </Link>
+                            <Link
+                                to="/"
+                                className="border border-outline-variant/50 hover:border-primary text-primary text-xs font-medium tracking-widest uppercase px-6 py-3 transition-colors"
+                            >
+                                Go Home
+                            </Link>
+                        </div>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
     const handleReserveClick = () => {
         if (!selectedSlot) {
@@ -86,7 +122,8 @@ export default function RestaurantDetail() {
         }
 
         // Redirect to confirmation page with query params
-        navigate(`/booking/${restaurant.slug}?slot=${selectedSlot}&date=${selectedDate}&guests=${selectedGuests}`);
+        const target = restaurant.slug || restaurant._id;
+        navigate(`/booking/${target}?slot=${selectedSlot}&date=${selectedDate}&guests=${selectedGuests}`);
     };
 
     return (

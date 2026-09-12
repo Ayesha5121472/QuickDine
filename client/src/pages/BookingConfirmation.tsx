@@ -20,6 +20,7 @@ export default function BookingConfirmation() {
 
     const [restaurant, setRestaurant] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [fetchError, setFetchError] = useState<string | null>(null);
     const [confirming, setConfirming] = useState(false);
     const [confirmedBooking, setConfirmedBooking] = useState<any>(null);
 
@@ -36,13 +37,10 @@ export default function BookingConfirmation() {
     const guests = searchParams.get("guests") || "2";
 
     useEffect(() => {
-        // Prefill form when user details load
         if (user) {
-            (() => {
-                setName(user.name);
-                setEmail(user.email);
-                if (user.phone) setPhone(user.phone);
-            })();
+            setName(user.name);
+            setEmail(user.email);
+            if (user.phone) setPhone(user.phone);
         }
     }, [user]);
 
@@ -50,48 +48,88 @@ export default function BookingConfirmation() {
         const fetchRestaurant = async () => {
            try{
             setLoading(true);
-            const res = await api.get(`/restaurants/${slug}`)
-            setRestaurant(res.data)
-
-           }catch(error:any){
-            toast.error(error?.response?.message || error?.message);
-            navigate("/");
-
-           }finally{
+            setFetchError(null);
+            const res = await api.get(`/restaurants/${slug}`);
+            setRestaurant(res.data);
+           } catch(error: any) {
+            const msg = error?.response?.data?.message || error?.message || "Failed to load restaurant";
+            setFetchError(msg);
+            toast.error(msg);
+           } finally {
             setLoading(false);
-
            }
         };
 
         if (slug) {
             fetchRestaurant();
         }
-    }, [slug, navigate]);
+    }, [slug]);
 
     if (loading) {
         return <Loader text="Retrieving Dining Details..." />;
     }
 
-    if (!restaurant) return null;
+    // Show error page instead of silently navigating away
+    if (fetchError || !restaurant) {
+        return (
+            <div className="min-h-screen bg-surface flex flex-col pt-20">
+                <Navbar />
+                <main className="grow flex flex-col items-center justify-center py-24 px-6 text-center">
+                    <div className="max-w-md space-y-6">
+                        <h2 className="font-display text-3xl font-medium text-primary">Booking Unavailable</h2>
+                        <p className="text-sm text-black/55 leading-relaxed">
+                            {fetchError || "Could not load restaurant details. Please try again."}
+                        </p>
+                        <div className="flex gap-4 justify-center">
+                            <button
+                                onClick={() => navigate(-1)}
+                                className="bg-primary hover:bg-secondary text-white text-xs font-medium tracking-widest uppercase px-6 py-3 transition-colors"
+                            >
+                                Go Back
+                            </button>
+                            <Link
+                                to="/search"
+                                className="border border-outline-variant/50 hover:border-primary text-primary text-xs font-medium tracking-widest uppercase px-6 py-3 transition-colors"
+                            >
+                                Browse Restaurants
+                            </Link>
+                        </div>
+                    </div>
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
     const handleConfirmSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (!slot || !date) {
-            toast.error("Reservation details are missing. Return to restaurant details.");
+            toast.error("Reservation details are missing. Please go back and select a time slot.");
+            navigate(`/restaurant/${restaurant.slug || restaurant._id}`);
+            return;
+        }
+
+        if (!restaurant._id) {
+            toast.error("Restaurant information is missing. Please try again.");
             return;
         }
 
         try {
             setConfirming(true);
-           
-const res = await api.post(`/booking`,{restaurantId: restaurant._id,date,
-    time:slot, guests,occasion,specialRequests})
-    setConfirmedBooking(res.data)
-
+            const res = await api.post(`/bookings`, {
+                restaurantId: restaurant._id,
+                date,
+                time: slot,
+                guests: Number(guests) || 2,
+                occasion: occasion || "",
+                specialRequests: specialRequests || "",
+            });
+            setConfirmedBooking(res.data);
             toast.success("Reservation confirmed!");
         } catch (error: any) {
-            toast.error(error?.response?.data?.message || error?.message);
+            const msg = error?.response?.data?.message || error?.message || "Failed to create reservation";
+            toast.error(msg);
         } finally {
             setConfirming(false);
         }
@@ -118,7 +156,7 @@ const res = await api.post(`/booking`,{restaurantId: restaurant._id,date,
             <main className="grow max-w-7xl w-full mx-auto px-6 md:px-10 py-12">
                 {/* Progress bar header */}
                 <div className="flex items-center gap-2 mb-10 pb-4 border-b border-outline-variant/10 text-xs text-black/55">
-                    <Link to={`/restaurant/${restaurant.slug}`} className="hover:text-primary transition-colors">
+                    <Link to={`/restaurant/${restaurant.slug || restaurant._id}`} className="hover:text-primary transition-colors">
                         {restaurant.name}
                     </Link>
                     <ChevronRight size={14} />

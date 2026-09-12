@@ -57,7 +57,7 @@ export default function Navbar() {
                         </Link>
                         <Link
                             to="/search"
-                            className={`text-sm transition-colors pb-1 border-b-2 border-transparent cursor-pointer ${location.pathname.startsWith("/search") ? "text-secondary border-secondary" : scrolled || location.pathname !== "/" ? "text-black/55 hover:text-primary" : "text-white/80 hover:text-white"}}`}
+                            className={`text-sm transition-colors pb-1 border-b-2 border-transparent cursor-pointer ${location.pathname.startsWith("/search") ? "text-secondary border-secondary" : scrolled || location.pathname !== "/" ? "text-black/55 hover:text-primary" : "text-white/80 hover:text-white"}`}
                         >
                             Restaurants
                         </Link>

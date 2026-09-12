@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "../middlewares/auth.js";
 import { Restaurant } from "../models/Restaurant.js";
-import { v2 as cloudinary } from "cloudinary";
+import cloudinary from "../config/cloudinary.js";
 import { Booking } from "../models/Booking.js";
 
 const uploadToCloudinary = (
@@ -120,11 +120,15 @@ export const createOwnerRestaurant = async (
       return;
     }
 
-    let imageUrl = "";
+    let imageUrl = "/default_restaurant_Img.jpeg";
 
     if (req.file) {
-      const result = await uploadToCloudinary(req.file.buffer);
-      imageUrl = result.secure_url;
+      try {
+        const result = await uploadToCloudinary(req.file.buffer);
+        imageUrl = result.secure_url;
+      } catch (uploadError) {
+        console.error("Cloudinary upload failed, falling back to default image:", uploadError);
+      }
     }
 
     const parsedTags =
@@ -205,6 +209,12 @@ export const updateOwnerRestaurant = async (
       tags,
       availableSlots,
       totalSeats,
+      phone,
+      whatsapp,
+      email,
+      openingHours,
+      closingHours,
+      availableDays,
     } = req.body;
 
     if (name) restaurant.name = name;
@@ -214,6 +224,14 @@ export const updateOwnerRestaurant = async (
     if (location) restaurant.location = location;
     if (address) restaurant.address = address;
     if (chef) restaurant.chef = chef;
+
+    // Contact fields (allow empty string to clear)
+    if (phone !== undefined) restaurant.phone = String(phone).trim();
+    if (whatsapp !== undefined) restaurant.whatsapp = String(whatsapp).trim();
+    if (email !== undefined) restaurant.email = String(email).trim();
+    if (openingHours !== undefined) restaurant.openingHours = String(openingHours).trim();
+    if (closingHours !== undefined) restaurant.closingHours = String(closingHours).trim();
+    if (availableDays !== undefined) restaurant.availableDays = String(availableDays).trim();
 
     if (totalSeats !== undefined && totalSeats !== "") {
       const seats = Number(totalSeats);
@@ -250,8 +268,12 @@ export const updateOwnerRestaurant = async (
     }
 
     if (req.file) {
-      const result = await uploadToCloudinary(req.file.buffer);
-      restaurant.image = result.secure_url;
+      try {
+        const result = await uploadToCloudinary(req.file.buffer);
+        restaurant.image = result.secure_url;
+      } catch (uploadError) {
+        console.error("Cloudinary upload failed on update:", uploadError);
+      }
     }
 
     const updatedRestaurant = await restaurant.save();
@@ -276,21 +298,34 @@ export const getOwnerBookings = async (
       return;
     }
 
-    const restaurant = await Restaurant.findOne({
+    const { restaurantId } = req.query;
+
+    const restaurants = await Restaurant.find({
       owner: req.user._id,
     });
 
-    if (!restaurant) {
-      res.status(404).json({
-        message: "Restaurant profile not found",
-      });
+    if (!restaurants || restaurants.length === 0) {
+      res.status(200).json([]);
       return;
     }
 
-    const bookings = await Booking.find({
-      restaurant: restaurant._id,
-    })
+    let filter: any = {};
+    if (restaurantId) {
+      const match = restaurants.find(
+        (r) => r._id.toString() === restaurantId || r.slug === restaurantId
+      );
+      if (!match) {
+        res.status(403).json({ message: "Not authorized for this restaurant" });
+        return;
+      }
+      filter.restaurant = match._id;
+    } else {
+      filter.restaurant = { $in: restaurants.map((r) => r._id) };
+    }
+
+    const bookings = await Booking.find(filter)
       .populate("user", "name email phone")
+      .populate("restaurant", "name slug location")
       .sort({ date: -1, time: 1 });
 
     res.status(200).json(bookings);

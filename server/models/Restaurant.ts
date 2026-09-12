@@ -5,7 +5,7 @@ export interface IRestaurant extends Document {
   slug: string;
   description: string;
   cuisine: string;
-  priceRange: "$" | "$$" | "$$$";
+  priceRange: "$" | "$$" | "$$$" | "$$$$";
   rating: number;
   reviewCount: number;
   location: string;
@@ -19,121 +19,47 @@ export interface IRestaurant extends Document {
   owner: Types.ObjectId;
   status: "pending" | "approved" | "rejected";
   totalSeats: number;
+  // Contact fields
+  phone?: string;
+  whatsapp?: string;
+  email?: string;
+  // Hours
+  openingHours?: string;
+  closingHours?: string;
+  availableDays?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const RestaurantSchema = new Schema<IRestaurant>(
   {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-      trim: true,
-      lowercase: true,
-    },
-
-    description: {
-      type: String,
-      required: true,
-    },
-
-    cuisine: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    priceRange: {
-      type: String,
-      enum: ["$", "$$", "$$$"],
-      required: true,
-    },
-
-    rating: {
-      type: Number,
-      default: 5.0,
-      min: 1,
-      max: 5,
-    },
-
-    reviewCount: {
-      type: Number,
-      default: 0,
-    },
-
-    location: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-
-    address: {
-      type: String,
-      required: true,
-    },
-
-    image: {
-      type: String,
-      default: "",
-    },
-
-    chef: {
-      type: String,
-      required: true,
-    },
-
-    tags: [
-      {
-        type: String,
-      },
-    ],
-
-    availableSlots: [
-      {
-        type: String,
-      },
-    ],
-
-    featured: {
-      type: Boolean,
-      default: false,
-    },
-
-    exclusive: {
-      type: Boolean,
-      default: false,
-    },
-
-    owner: {
-      type: Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-
-    status: {
-      type: String,
-      enum: ["pending", "approved", "rejected"],
-      default: "pending",
-    },
-
-    totalSeats: {
-      type: Number,
-      required: true,
-    },
+    name: { type: String, required: true, trim: true },
+    slug: { type: String, required: true, unique: true, trim: true, lowercase: true },
+    description: { type: String, required: true },
+    cuisine: { type: String, required: true, trim: true },
+    priceRange: { type: String, enum: ["$", "$$", "$$$", "$$$$"], required: true },
+    rating: { type: Number, default: 5.0, min: 1, max: 5 },
+    reviewCount: { type: Number, default: 0 },
+    location: { type: String, required: true, trim: true },
+    address: { type: String, required: true },
+    image: { type: String, default: "" },
+    chef: { type: String, required: true },
+    tags: [{ type: String }],
+    availableSlots: [{ type: String }],
+    featured: { type: Boolean, default: false },
+    exclusive: { type: Boolean, default: false },
+    owner: { type: Types.ObjectId, ref: "User", required: true },
+    status: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" },
+    totalSeats: { type: Number, required: true },
+    // New contact & hours fields
+    phone: { type: String, trim: true, default: "" },
+    whatsapp: { type: String, trim: true, default: "" },
+    email: { type: String, trim: true, default: "" },
+    openingHours: { type: String, trim: true, default: "17:00" },
+    closingHours: { type: String, trim: true, default: "23:00" },
+    availableDays: { type: String, trim: true, default: "Monday - Sunday" },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-export const Restaurant = model<IRestaurant>(
-  "Restaurant",
-  RestaurantSchema
-);
+export const Restaurant = model<IRestaurant>("Restaurant", RestaurantSchema);

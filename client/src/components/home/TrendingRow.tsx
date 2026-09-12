@@ -31,6 +31,16 @@ export default function TrendingRow({ trending, loading }: TrendingRowProps) {
                     <div className="flex justify-center py-16">
                         <div className="w-8 h-8 border-2 border-outline-variant/30 border-t-secondary rounded-full animate-spin"></div>
                     </div>
+                ) : trending.length === 0 ? (
+                    <div className="text-center py-16">
+                        <p className="text-sm text-black/55 mb-4">No featured restaurants available right now.</p>
+                        <Link
+                            to="/search"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-secondary hover:text-primary tracking-wider uppercase"
+                        >
+                            Browse all restaurants <ArrowRight size={14} />
+                        </Link>
+                    </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {trending.slice(0, 3).map((r) => (

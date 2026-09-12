@@ -58,25 +58,21 @@ export const AppContextProvider = ({ children }: Props) => {
     };
 
     const register = async (name: string, email: string, password: string, phone?: string, role?: string): Promise<boolean> => {
-         try{
-        setLoading(true);
-        const res = await api.post("/auth/resgister",{name,email,password, phone,role});
-        const {token:userToken, ...userData}= res.data;
-        localStorage.setItem("token", userToken)
-        setToken(userToken)
-        setUser(userData)
-    toast.success(`Welcome to QuickDine Club!`)
-        return true;
-
-
-       }catch(error:any){
-        toast.error(error?.response?.data?.message || error?.message);
-        return false;
-       }
-       finally{
-        setLoading(false);
-       }
-       
+        try {
+            setLoading(true);
+            const res = await api.post("/auth/register", { name, email, password, phone, role });
+            const { token: userToken, ...userData } = res.data;
+            localStorage.setItem("token", userToken);
+            setToken(userToken);
+            setUser(userData);
+            toast.success("Welcome to QuickDine Club!");
+            return true;
+        } catch (error: any) {
+            toast.error(error?.response?.data?.message || error?.message || "Registration failed");
+            return false;
+        } finally {
+            setLoading(false);
+        }
     };
 
     const logout = () => {
@@ -89,14 +85,14 @@ export const AppContextProvider = ({ children }: Props) => {
     useEffect(() => {
         const loadUser = async () => {
             if (token) {
-                try{
-                    const res = await api.get("/auth/me")
-                    setUser(res.data)
-
-                }catch(error:any){
-                    toast.error(error?.response?.data?.message || error.message);
-                    logout()
-
+                try {
+                    const res = await api.get("/auth/me");
+                    setUser(res.data);
+                } catch (error: any) {
+                    console.error("Session load error:", error);
+                    localStorage.removeItem("token");
+                    setToken(null);
+                    setUser(null);
                 }
             }
             setLoading(false);

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Link } from "react-router-dom";
-import { Calendar, Users, Clock, MapPin, Check } from "lucide-react";
+import { Calendar, Users, Clock, MapPin, Check, MessageCircle } from "lucide-react";
 
 interface BookingSuccessProps {
     confirmedBooking: any;
@@ -10,8 +10,26 @@ interface BookingSuccessProps {
     guests: string;
 }
 
+/** Normalize WhatsApp number to international format without + */
+function buildWhatsAppNumber(raw: string): string {
+    let num = raw.replace(/[\s\-().+]/g, "");
+    if (num.startsWith("92")) return num;
+    if (num.startsWith("0")) return "92" + num.slice(1);
+    return "92" + num;
+}
+
 export default function BookingSuccess({ confirmedBooking, restaurant, date, slot, guests }: BookingSuccessProps) {
     if (!confirmedBooking || !restaurant) return null;
+
+    const hasWhatsApp = Boolean(restaurant.whatsapp?.trim());
+
+    const whatsappNumber = hasWhatsApp ? buildWhatsAppNumber(restaurant.whatsapp) : "";
+    const bookingMessage = hasWhatsApp
+        ? encodeURIComponent(
+              `Hello, I have a booking at ${restaurant.name}.\nDate: ${new Date(`${date.split("T")[0]}T00:00:00.000Z`).toLocaleDateString("en-US", { timeZone: "UTC", weekday: "long", year: "numeric", month: "long", day: "numeric" })}\nTime: ${slot}\nGuests: ${guests}\nRef: ${confirmedBooking.bookingId}`
+          )
+        : "";
+    const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${bookingMessage}`;
 
     return (
         <div className="max-w-xl w-full bg-white border border-outline-variant/20 p-10 text-center rounded-lg ambient-shadow space-y-8 animate-in zoom-in-95 duration-300">
@@ -38,7 +56,8 @@ export default function BookingSuccess({ confirmedBooking, restaurant, date, slo
                     <div className="flex items-center gap-3">
                         <Calendar size={14} className="text-black/55" />
                         <span>
-                            {new Date(date).toLocaleDateString("en-US", {
+                            {new Date(`${date.split("T")[0]}T00:00:00.000Z`).toLocaleDateString("en-US", {
+                                timeZone: "UTC",
                                 weekday: "long",
                                 year: "numeric",
                                 month: "long",
@@ -48,7 +67,7 @@ export default function BookingSuccess({ confirmedBooking, restaurant, date, slo
                     </div>
                     <div className="flex items-center gap-3">
                         <Clock size={14} className="text-black/55" />
-                        <span>{slot} PM</span>
+                        <span>{slot}</span>
                     </div>
                     <div className="flex items-center gap-3">
                         <Users size={14} className="text-black/55" />
@@ -61,8 +80,21 @@ export default function BookingSuccess({ confirmedBooking, restaurant, date, slo
                 </div>
             </div>
 
+            {/* WhatsApp contact after booking */}
+            {hasWhatsApp && (
+                <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1ebe5d] text-white py-3.5 text-xs font-medium tracking-widest uppercase transition-colors rounded-sm"
+                >
+                    <MessageCircle size={16} />
+                    Contact Restaurant on WhatsApp
+                </a>
+            )}
+
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            <div className="flex flex-col sm:flex-row gap-4">
                 <Link
                     to="/dashboard"
                     className="flex-1 bg-primary hover:bg-primary-container text-white py-3.5 px-4 text-xs font-medium tracking-widest uppercase hover:text-secondary text-center cursor-pointer transition-colors"

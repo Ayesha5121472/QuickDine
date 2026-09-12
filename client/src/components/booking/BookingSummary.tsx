@@ -18,7 +18,14 @@ export default function BookingSummary({ restaurant, date, slot, guests }: Booki
             {/* Restaurant Info Header */}
             <div className="flex gap-4">
                 <div className="w-24 h-24 overflow-hidden rounded-sm shrink-0">
-                    <img src={restaurant.image} alt={restaurant.name} className="w-full h-full object-cover" />
+                    <img
+                        src={restaurant.image || "/default_restaurant_Img.jpeg"}
+                        alt={restaurant.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                            e.currentTarget.src = "/default_restaurant_Img.jpeg";
+                        }}
+                    />
                 </div>
                 <div className="space-y-1">
                     <span className="text-[9px] text-secondary tracking-widest uppercase">{restaurant.cuisine}</span>
@@ -36,13 +43,20 @@ export default function BookingSummary({ restaurant, date, slot, guests }: Booki
                     <span className="text-black/55 flex items-center gap-2">
                         <Calendar size={14} /> Date
                     </span>
-                    <span>{new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                    <span>
+                        {new Date(`${date.split("T")[0]}T00:00:00.000Z`).toLocaleDateString("en-US", {
+                            timeZone: "UTC",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                        })}
+                    </span>
                 </div>
                 <div className="flex justify-between items-center">
                     <span className="text-black/55 flex items-center gap-2">
                         <Clock size={14} /> Time
                     </span>
-                    <span>{slot} PM</span>
+                    <span>{slot}</span>
                 </div>
                 <div className="flex justify-between items-center">
                     <span className="text-black/55 flex items-center gap-2">

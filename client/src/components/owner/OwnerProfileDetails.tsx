@@ -18,6 +18,12 @@ export default function OwnerProfileDetails({ restaurant, setRestaurant }: Owner
     const [address, setAddress] = useState("");
     const [chef, setChef] = useState("");
     const [tags, setTags] = useState("");
+    const [phone, setPhone] = useState("");
+    const [whatsapp, setWhatsapp] = useState("");
+    const [email, setEmail] = useState("");
+    const [openingHours, setOpeningHours] = useState("17:00");
+    const [closingHours, setClosingHours] = useState("23:00");
+    const [availableDays, setAvailableDays] = useState("Monday - Sunday");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string>("");
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
@@ -25,46 +31,37 @@ export default function OwnerProfileDetails({ restaurant, setRestaurant }: Owner
     const [formLoading, setFormLoading] = useState(false);
 
     const defaultSlots = [
-        "12:00",
-        "13:00",
-        "14:00",
-        "17:00",
-        "17:30",
-        "18:00",
-        "18:30",
-        "19:00",
-        "19:30",
-        "20:00",
-        "20:30",
-        "21:00",
-        "21:30",
+        "12:00","13:00","14:00","17:00","17:30",
+        "18:00","18:30","19:00","19:30","20:00","20:30","21:00","21:30",
     ];
 
     useEffect(() => {
         if (restaurant) {
-            (() => {
-                setName(restaurant.name || "");
-                setDescription(restaurant.description || "");
-                setCuisine(restaurant.cuisine || "");
-                setPriceRange(restaurant.priceRange || "$$");
-                setLocation(restaurant.location || "");
-                setAddress(restaurant.address || "");
-                setChef(restaurant.chef || "");
-                setTags(restaurant.tags?.join(", ") || "");
-                setTotalSeats(restaurant.totalSeats?.toString() || "20");
-                setAvailableSlots(restaurant.availableSlots || []);
-                setImagePreview(restaurant.image || "");
-                setImageFile(null); // Reset file selection
-            })();
+            setName(restaurant.name || "");
+            setDescription(restaurant.description || "");
+            setCuisine(restaurant.cuisine || "");
+            setPriceRange(restaurant.priceRange || "$$");
+            setLocation(restaurant.location || "");
+            setAddress(restaurant.address || "");
+            setChef(restaurant.chef || "");
+            setTags(restaurant.tags?.join(", ") || "");
+            setPhone(restaurant.phone || "");
+            setWhatsapp(restaurant.whatsapp || "");
+            setEmail(restaurant.email || "");
+            setOpeningHours(restaurant.openingHours || "17:00");
+            setClosingHours(restaurant.closingHours || "23:00");
+            setAvailableDays(restaurant.availableDays || "Monday - Sunday");
+            setTotalSeats(restaurant.totalSeats?.toString() || "20");
+            setAvailableSlots(restaurant.availableSlots || []);
+            setImagePreview(restaurant.image || "");
+            setImageFile(null);
         }
     }, [restaurant]);
 
     const toggleSlot = (slot: string) => {
-        if (availableSlots.includes(slot)) {
-            setAvailableSlots(availableSlots.filter((s) => s !== slot));
-        } else {
-            setAvailableSlots([...availableSlots, slot].sort());
-        }
+        setAvailableSlots((prev) =>
+            prev.includes(slot) ? prev.filter((s) => s !== slot) : [...prev, slot].sort()
+        );
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,21 +85,21 @@ export default function OwnerProfileDetails({ restaurant, setRestaurant }: Owner
             formData.append("address", address);
             formData.append("chef", chef);
             formData.append("tags", tags);
+            formData.append("phone", phone);
+            formData.append("whatsapp", whatsapp);
+            formData.append("email", email);
+            formData.append("openingHours", openingHours);
+            formData.append("closingHours", closingHours);
+            formData.append("availableDays", availableDays);
             formData.append("availableSlots", availableSlots.join(","));
             formData.append("totalSeats", totalSeats);
-            if (imageFile) {
-                formData.append("image", imageFile);
-            }
-            const res= await api.put("/onwer/restaurant",formData,{
-                headers:{
-                    "Content-Type": "multipart/form-data"
-                },
-            })
-            setRestaurant(res.data)
-           
+            if (imageFile) formData.append("image", imageFile);
 
-
-            toast.success("Profile details updated successfully!");
+            const res = await api.put("/owner/restaurant", formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            setRestaurant(res.data);
+            toast.success("Profile updated successfully!");
         } catch (error: any) {
             toast.error(error?.response?.data?.message || "Update failed");
         } finally {
@@ -110,62 +107,123 @@ export default function OwnerProfileDetails({ restaurant, setRestaurant }: Owner
         }
     };
 
+    const inputCls = "w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm";
+    const labelCls = "block text-[10px] font-medium text-black/55 tracking-wider uppercase";
+
     return (
         <div className="bg-white border border-outline-variant/20 p-6 md:p-8 rounded-md shadow-sm space-y-6 text-left">
             <h3 className="font-display text-lg font-medium text-primary border-b border-outline-variant/10 pb-4">
-                Update Profile & Capacity
+                Update Restaurant Profile
             </h3>
 
-            <form onSubmit={handleUpdateRestaurant} className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Restaurant Name</label>
-                        <input
-                            type="text"
-                            required
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            className="w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                        />
+            <form onSubmit={handleUpdateRestaurant} className="space-y-6">
+
+                {/* ── Basic Info ── */}
+                <div>
+                    <p className="text-[9px] font-semibold text-secondary tracking-widest uppercase mb-3">Basic Information</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className={labelCls}>Restaurant Name</label>
+                            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className={labelCls}>Cuisine Type</label>
+                            <input type="text" required value={cuisine} onChange={(e) => setCuisine(e.target.value)} className={inputCls} />
+                        </div>
                     </div>
-                    <div className="space-y-1">
-                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Cuisine Type</label>
-                        <input
-                            type="text"
-                            required
-                            value={cuisine}
-                            onChange={(e) => setCuisine(e.target.value)}
-                            className="w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                        />
+                    <div className="space-y-1 mt-4">
+                        <label className={labelCls}>Description</label>
+                        <textarea required rows={4} value={description} onChange={(e) => setDescription(e.target.value)}
+                            className="w-full bg-surface-container-low/30 border border-outline-variant/40 p-3 text-xs focus:border-secondary focus:outline-none rounded-sm" />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div className="space-y-1">
+                            <label className={labelCls}>Address</label>
+                            <input type="text" required value={address} onChange={(e) => setAddress(e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className={labelCls}>Location (City)</label>
+                            <input type="text" required value={location} onChange={(e) => setLocation(e.target.value)} className={inputCls} />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                        <div className="space-y-1">
+                            <label className={labelCls}>Price Range</label>
+                            <select value={priceRange} onChange={(e) => setPriceRange(e.target.value)} className={inputCls}>
+                                <option value="$">$ (Casual)</option>
+                                <option value="$$">$$ (Moderate)</option>
+                                <option value="$$$">$$$ (Upscale)</option>
+                                <option value="$$$$">$$$$ (Fine Dining)</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1">
+                            <label className={labelCls}>Executive Chef</label>
+                            <input type="text" required value={chef} onChange={(e) => setChef(e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className={labelCls}>Total Seats</label>
+                            <input type="number" min="1" required value={totalSeats} onChange={(e) => setTotalSeats(e.target.value)} className={inputCls} />
+                        </div>
+                    </div>
+                    <div className="space-y-1 mt-4">
+                        <label className={labelCls}>Tags (comma separated)</label>
+                        <input type="text" value={tags} onChange={(e) => setTags(e.target.value)} placeholder="Romantic, Rooftop, Fine Dining" className={inputCls} />
                     </div>
                 </div>
 
-                <div className="space-y-1">
-                    <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Description</label>
-                    <textarea
-                        required
-                        rows={4}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="w-full bg-surface-container-low/30 border border-outline-variant/40 p-3 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                    ></textarea>
+                {/* ── Contact ── */}
+                <div>
+                    <p className="text-[9px] font-semibold text-secondary tracking-widest uppercase mb-3">Contact Information</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-1">
+                            <label className={labelCls}>Phone Number</label>
+                            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+92 300 1234567" className={inputCls} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className={labelCls}>WhatsApp Number</label>
+                            <input type="tel" value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="03001234567" className={inputCls} />
+                            <p className="text-[9px] text-black/40 mt-0.5">Pakistan format: 03XXXXXXXXX</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className={labelCls}>Email Address</label>
+                            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="restaurant@example.com" className={inputCls} />
+                        </div>
+                    </div>
                 </div>
 
-                {/* Cover Image Upload */}
-                <div className="space-y-1">
-                    <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Restaurant Cover Image</label>
+                {/* ── Hours ── */}
+                <div>
+                    <p className="text-[9px] font-semibold text-secondary tracking-widest uppercase mb-3">Opening Hours</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-1">
+                            <label className={labelCls}>Opening Time</label>
+                            <input type="time" value={openingHours} onChange={(e) => setOpeningHours(e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className={labelCls}>Closing Time</label>
+                            <input type="time" value={closingHours} onChange={(e) => setClosingHours(e.target.value)} className={inputCls} />
+                        </div>
+                        <div className="space-y-1">
+                            <label className={labelCls}>Available Days</label>
+                            <input type="text" value={availableDays} onChange={(e) => setAvailableDays(e.target.value)} placeholder="Monday - Sunday" className={inputCls} />
+                        </div>
+                    </div>
+                </div>
+
+                {/* ── Cover Image ── */}
+                <div>
+                    <p className="text-[9px] font-semibold text-secondary tracking-widest uppercase mb-3">Cover Image</p>
                     <div className="flex flex-col md:flex-row gap-4 items-center bg-surface-container-low/30 border border-outline-variant/40 p-4 rounded-sm">
                         <div className="relative w-32 h-24 bg-surface border border-outline-variant/30 rounded-sm overflow-hidden shrink-0 flex items-center justify-center">
                             {imagePreview ? (
-                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                                <img src={imagePreview} alt="Preview" className="w-full h-full object-cover"
+                                    onError={(e) => { e.currentTarget.src = "/default_restaurant_Img.jpeg"; }} />
                             ) : (
                                 <Image size={24} className="text-black/30" />
                             )}
                         </div>
                         <div className="grow space-y-2 text-center md:text-left w-full">
-                            <p className="text-[11px] text-black/55 leading-relaxed">
-                                Upload a high-resolution banner photo for your restaurant page. Supports JPG, PNG.
-                            </p>
+                            <p className="text-[11px] text-black/55 leading-relaxed">Upload a high-resolution banner photo. Supports JPG, PNG.</p>
                             <label className="inline-flex items-center gap-1.5 px-4 py-2 border border-outline-variant/40 hover:border-primary hover:text-primary transition-colors text-[10px] font-medium tracking-wider uppercase rounded-sm cursor-pointer bg-white">
                                 <Upload size={12} />
                                 {imageFile ? "Change Image" : "Upload Image"}
@@ -176,94 +234,17 @@ export default function OwnerProfileDetails({ restaurant, setRestaurant }: Owner
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1">
-                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Price Range</label>
-                        <select
-                            value={priceRange}
-                            onChange={(e) => setPriceRange(e.target.value)}
-                            className="w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                        >
-                            <option value="$">$ (Casual)</option>
-                            <option value="$$">$$ (Moderate)</option>
-                            <option value="$$$">$$$ (Upscale)</option>
-                            <option value="$$$$">$$$$ (Fine Dining)</option>
-                        </select>
-                    </div>
-                    <div className="space-y-1">
-                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Location (City)</label>
-                        <input
-                            type="text"
-                            required
-                            value={location}
-                            onChange={(e) => setLocation(e.target.value)}
-                            className="w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">
-                            Total Capacity (Seats)
-                        </label>
-                        <input
-                            type="number"
-                            min="1"
-                            required
-                            value={totalSeats}
-                            onChange={(e) => setTotalSeats(e.target.value)}
-                            className="w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Address</label>
-                        <input
-                            type="text"
-                            required
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                            className="w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                        />
-                    </div>
-                    <div className="space-y-1">
-                        <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Executive Chef</label>
-                        <input
-                            type="text"
-                            required
-                            value={chef}
-                            onChange={(e) => setChef(e.target.value)}
-                            className="w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                        />
-                    </div>
-                </div>
-
-                <div className="space-y-1">
-                    <label className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Tags (comma separated)</label>
-                    <input
-                        type="text"
-                        value={tags}
-                        onChange={(e) => setTags(e.target.value)}
-                        className="w-full bg-surface-container-low/30 border border-outline-variant/40 px-3 py-2.5 text-xs focus:border-secondary focus:outline-none rounded-sm"
-                    />
-                </div>
-
-                <div className="space-y-2">
-                    <span className="block text-[10px] font-medium text-black/55 tracking-wider uppercase">Available Slots</span>
+                {/* ── Available Slots ── */}
+                <div>
+                    <p className="text-[9px] font-semibold text-secondary tracking-widest uppercase mb-3">Reservation Slots</p>
                     <div className="flex flex-wrap gap-2">
                         {defaultSlots.map((slot) => {
                             const isSelected = availableSlots.includes(slot);
                             return (
-                                <button
-                                    key={slot}
-                                    type="button"
-                                    onClick={() => toggleSlot(slot)}
+                                <button key={slot} type="button" onClick={() => toggleSlot(slot)}
                                     className={`py-1.5 px-3 text-[10px] border transition-colors cursor-pointer rounded-sm ${
-                                        isSelected
-                                            ? "bg-primary border-primary text-white"
-                                            : "border-outline-variant/40 text-black/55 hover:border-primary"
-                                    }`}
-                                >
+                                        isSelected ? "bg-primary border-primary text-white" : "border-outline-variant/40 text-black/55 hover:border-primary"
+                                    }`}>
                                     {slot}
                                 </button>
                             );
@@ -271,11 +252,8 @@ export default function OwnerProfileDetails({ restaurant, setRestaurant }: Owner
                     </div>
                 </div>
 
-                <button
-                    type="submit"
-                    disabled={formLoading}
-                    className="w-full bg-primary hover:bg-secondary text-white text-xs font-medium tracking-widest uppercase py-3.5 transition-colors cursor-pointer"
-                >
+                <button type="submit" disabled={formLoading}
+                    className="w-full bg-primary hover:bg-secondary text-white text-xs font-medium tracking-widest uppercase py-3.5 transition-colors cursor-pointer disabled:opacity-60">
                     {formLoading ? "SAVING CHANGES..." : "SAVE PROFILE DETAILS"}
                 </button>
             </form>
